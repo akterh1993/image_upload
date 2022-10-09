@@ -1,5 +1,6 @@
 const express = require("express");
 const userController = require("../controllers/user.controller");
+const auth = require("../middleware/auth");
 const router = express();
 
 const bodyParser = require("body-parser");
@@ -29,8 +30,12 @@ const storage = multer.diskStorage({
   const upload = multer({ storage: storage });
 
   router.post('/register', upload.single('image'),userController.createUser);
+  router.post('/login', userController.login);
+  router.get('/test', auth, function(req, res){
+    res.status(200).send({success:true, msg:"Authenticated"});
+  });
   router.get('/register/:id', upload.single('image'),userController.getOneUser);
-  router.get('/register/:id', upload.single('image'),userController.deleteUser);
+  router.delete('/register/:id', upload.single('image'),userController.deleteUser);
   router.get('/register', upload.single('image'),userController.getAllUsers);
   router.patch('/register', upload.single('image'),userController.updateUser);
 

@@ -1,6 +1,17 @@
 const User = require("../models/user.models");
-const {v4: uuidv4} = require('uuid');
 const bcryptjs = require('bcryptjs');
+const config = require("../config/config");
+const jwt = require("jsonwebtoken");
+
+
+const createToken = async(id)=>{
+    try {
+        const token = await jwt.sign({_id:id},config.secret_key);
+        return token;
+    } catch (error) {
+        res.status(400).send(error.message);
+    }
+}
 
 const securePassword = async(password)=>{
     try {
@@ -34,7 +45,6 @@ const createUser = async(req, res)=>{
     try {
         const spassword = await securePassword(req.body.password);
         const newUser = new User({
-            id: uuidv4(),
             name: req.body.name,
             mobile: req.body.mobile,
             email: req.body.email,
@@ -85,5 +95,44 @@ const deleteUser = async(req, res)=>{
     }
 };
 
+const login = async(req, res)=>{
+    try {
+        const  email = req.body.email;
+        const password = req.body.password;
 
-module.exports = { getAllUsers, getOneUser, createUser, updateUser, deleteUser };
+        const userData = await User.findOne({email:email});
+        if (userData) {
+            const passwordMatch = await bcryptjs.compare(password,userData.password);
+            if (passwordMatch) {
+                const tokenData = await createToken(userData._id);
+                const userResult ={
+                    _id: userData._id,
+                    name:userData.name,
+                    mobile:userData.mobile,
+                    email:userData.email,
+                    password:userData.password,
+                    image:userData.image,
+                    type:userData.type,
+                    token:tokenData,
+                }
+                const response ={
+                    success:true,
+                    msg:"User Details",
+                    data:userResult
+                }
+                res.status(200).send(response);
+                
+            } else {
+                res.status(200).send({success:false, msg:"Password incorrect"});
+            }
+            
+        } else {
+            res.status(200).send({success:false, msg:"email or password incorrect"});
+        }
+    } catch (error) {
+        res.status(500).send(error.message);
+    }
+};
+
+
+module.exports = { getAllUsers, getOneUser, createUser, updateUser, deleteUser, login };
